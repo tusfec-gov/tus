@@ -31,7 +31,7 @@ async function saveData(fn,msg){
 /* layout */
 function shell(html,r){
   const nav=[["","Home"],["president","President"],["senate","Senate"],["house","House"],["news","Announcements"]].map(n=>`<a href="#/${n[0]}"${n[0]===r?' class="on"':""}>${n[1]}</a>`).join("")+`<a class="gap${r==="staff"?" on":""}" href="#/${ss("who")?"dashboard":"login"}">${ss("who")?"Dashboard":"Staff"}</a>`;
-  app.innerHTML=`<div class="disc0">${esc(S.disclaimer)}</div><header class="top"><div class="w bar"><a class="brand" href="#/">${S.logo?`<img src="${esc(S.logo)}" alt="">`:""}${esc(S.name)}</a><span class="tag">${esc(S.tagline)}</span></div><nav class="cats" aria-label="Sections"><div class="w">${nav}</div></nav></header><main class="w">${html}</main><footer><div class="w"><b>${esc(S.name)}</b><p>${esc(S.legal)}</p></div></footer>`;
+  app.innerHTML=`<div class="disc0"><div class="w">${esc(S.disclaimer)}</div></div><header class="top"><div class="w bar"><a class="brand" href="#/">${S.logo?`<img src="${esc(S.logo)}" alt="">`:`<span class="seal" aria-hidden="true">${esc((S.seal||S.name.split(/\s+/).map(w=>w[0]).join("")).slice(0,4).toUpperCase())}</span>`}<span><b>${esc(S.name)}</b><small>${esc(S.tagline)}</small></span></a></div><nav class="cats" aria-label="Sections"><div class="w">${nav}</div></nav></header><main class="w">${html}</main><footer><div class="w fcols"><div><b>${esc(S.name)}</b><p>${esc(S.legal)}</p></div><div><b>Results</b><a href="#/president">President</a><a href="#/senate">Senate</a><a href="#/house">House</a><a href="#/news">Announcements</a></div></div></footer>`;
   window.scrollTo(0,0);
 }
 const bar=parts=>`<div class="bar2" role="img" aria-label="${esc(parts.map(p=>p.l+" "+p.n).join(", "))}">${parts.filter(p=>p.n>0).map(p=>`<span style="flex:${p.n};background:${esc(p.c)}">${p.n}</span>`).join("")}</div><div class="leg2">${parts.map(p=>`<span><i style="background:${esc(p.c)}"></i>${esc(p.l)} ${p.n}</span>`).join("")}</div>`;
@@ -48,8 +48,9 @@ function home(){
   const e=evParts(),w=e.c.find(x=>x.n>=e.need),h=D.house,s=D.senate,n=l=>l.filter(x=>x.status==="called").length;
   shell(`<h1>${esc(D.election.name)}</h1><p class="lede">Results from the ${esc(S.name)}. Last updated ${esc(fmt(D.updated))}.</p><div class="cards3"><a class="card2" href="#/president"><h3>President</h3>${w?`<p class="win">${esc(w.l)} wins the presidency</p>`:`<p class="mut">${e.need} of ${e.tot} electoral votes needed to win</p>`}${bar(e.parts)}</a><a class="card2" href="#/senate"><h3>United States Senate</h3><p class="mut">${n(s)} of ${s.length} seats called</p>${bar(seatParts(s))}</a><a class="card2" href="#/house"><h3>House of Representatives</h3><p class="mut">${n(h)} of ${h.length} seats called</p>${bar(seatParts(h))}</a></div><h2 class="sh">Latest announcements</h2>${news(D.announcements.slice(0,3))}<p><a class="mut" href="#/news">All announcements</a></p>`,"");
 }
-function house(){const l=D.house;shell(`<h1>House of Representatives</h1><p class="lede">${l.length} seats. ${l.filter(x=>x.status==="called").length} called.</p>${bar(seatParts(l))}<div class="grid">${l.map(x=>seat(x,x.name)).join("")}</div>`,"house")}
-function senate(){const l=D.senate;shell(`<h1>United States Senate</h1><p class="lede">${l.length} seats. ${l.filter(x=>x.status==="called").length} called.</p>${bar(seatParts(l))}${["I","II","III"].map(c=>{const g=l.filter(x=>x.class===c);return g.length?`<h2 class="sh">Class ${c} (${g.length} seats)</h2><div class="grid">${g.map(x=>seat(x,x.state)).join("")}</div>`:""}).join("")}`,"senate")}
+const rt=(l,key)=>`<div class="tw"><table class="rt"><thead><tr><th>Seat</th><th>Status</th><th>Winner</th><th>Party</th><th>Votes</th><th>Margin</th></tr></thead><tbody>${l.map(x=>`<tr><td><b>${esc(x[key])}</b>${x.incumbent?`<br><small>Incumbent: ${esc(x.incumbent)}</small>`:""}</td><td>${stat(x)}</td><td>${x.status==="called"&&x.winner?esc(x.winner):"-"}</td><td>${x.status==="called"&&chip(x.party)?chip(x.party):"-"}</td><td>${esc(x.votes)||"-"}</td><td>${esc(x.margin)||"-"}</td></tr>`).join("")}</tbody></table></div>`;
+function house(){const l=D.house;shell(`<h1>House of Representatives</h1><p class="lede">${l.length} seats. ${l.filter(x=>x.status==="called").length} called.</p>${bar(seatParts(l))}${rt(l,"name")}`,"house")}
+function senate(){const l=D.senate;shell(`<h1>United States Senate</h1><p class="lede">${l.length} seats. ${l.filter(x=>x.status==="called").length} called.</p>${bar(seatParts(l))}${["I","II","III"].map(c=>{const g=l.filter(x=>x.class===c);return g.length?`<h2 class="sh">Class ${c} (${g.length} seats)</h2>${rt(g,"state")}`:""}).join("")}`,"senate")}
 const newsPage=()=>shell(`<h1>Announcements</h1>${news(D.announcements)}`,"news");
 function president(){
   const e=evParts(),w=e.c.find(x=>x.n>=e.need);
@@ -126,6 +127,9 @@ function route(){
   const r=location.hash.replace(/^#\/?/,"").split("/")[0];document.title=S.name;
   const R={"":home,president,senate,house,news:newsPage,login,dashboard:dash,hash:hashPage};(R[r]||home)();
 }
+addEventListener("hashchange",route);
+fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
+})();
 addEventListener("hashchange",route);
 fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
 })();
