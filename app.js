@@ -129,6 +129,3 @@ function route(){
 addEventListener("hashchange",route);
 fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
 })();
-addEventListener("hashchange",route);
-fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
-})();
