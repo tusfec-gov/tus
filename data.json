@@ -2,7 +2,7 @@
  "election": {
   "name": "General Election"
  },
- "updated": "2026-10-31T22:17:41.578Z",
+ "updated": "2026-10-31T22:20:13.419Z",
  "parties": [
   {
    "id": "dem",
@@ -723,7 +723,7 @@
  "senate": [
   {
    "incumbent": "Ronald Johnson",
-   "status": "pending",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
@@ -734,7 +734,7 @@
   },
   {
    "incumbent": "William Payne",
-   "status": "pending",
+   "status": "called",
    "winner": "",
    "party": "ind",
    "votes": "",
@@ -744,8 +744,8 @@
    "class": "I"
   },
   {
-   "incumbent": "Michael Lloyd ",
-   "status": "pending",
+   "incumbent": "Micheal Lloyd",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
@@ -756,7 +756,7 @@
   },
   {
    "incumbent": "Alice Fuller",
-   "status": "pending",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
@@ -766,8 +766,8 @@
    "class": "II"
   },
   {
-   "incumbent": "John Kennedy",
-   "status": "pending",
+   "incumbent": "Jonah Wintour",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
@@ -777,8 +777,8 @@
    "class": "II"
   },
   {
-   "incumbent": "Jonah Wintour",
-   "status": "pending",
+   "incumbent": "John Kennedy",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
@@ -789,7 +789,7 @@
   },
   {
    "incumbent": "Macro Diaz",
-   "status": "pending",
+   "status": "called",
    "winner": "",
    "party": "dem",
    "votes": "",
