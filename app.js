@@ -1,10 +1,11 @@
 (()=>{
-const S=window.SITE,app=document.getElementById("app"),T="gh_token",O=S.repo;
+const S=window.SITE,app=document.getElementById("app"),T="gh_token";let O=S.repo;
 let D=null,FL="";
-const API=`https://api.github.com/repos/${O.owner}/${O.name}/contents/`;
+const api=()=>`https://api.github.com/repos/${O.owner}/${O.name}/contents/`;
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ss=(k,v)=>{try{if(v===undefined)return sessionStorage.getItem(k);v===null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v)}catch(e){return null}};
 const $=i=>document.getElementById(i);
+{const q=ss("repo");if(q){const a=q.split("|");O={owner:a[0],name:a[1],branch:a[2]||"main"}}}
 const sha=t=>crypto.subtle.digest("SHA-256",new TextEncoder().encode(t)).then(b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""));
 const b64=s=>btoa(unescape(encodeURIComponent(s)));
 const party=id=>D.parties.find(p=>p.id===id);
@@ -17,7 +18,7 @@ const chip=id=>{const q=party(id);return q?`<span class="chip" style="background
 const paras=b=>String(b||"").split(/\n\s*\n/).filter(p=>p.trim()).map(p=>`<p>${esc(p)}</p>`).join("");
 const ev=s=>+s.ev||0;
 /* GitHub saving */
-const gh=(p,o={})=>fetch(API+p,{...o,headers:{Authorization:"Bearer "+ss(T),Accept:"application/vnd.github+json"}});
+const gh=(p,o={})=>fetch(api()+p,{...o,headers:{Authorization:"Bearer "+ss(T),Accept:"application/vnd.github+json"}});
 async function saveData(fn,msg){
   const r=await gh("data.json?ref="+O.branch);
   if(!r.ok)throw new Error(`Could not read data.json (${r.status}). Check the token and the repo in config.js.`);
@@ -63,12 +64,19 @@ function login(){
   $("lf").onsubmit=async e=>{e.preventDefault();const h=await sha($("p").value),u=$("u").value.trim().toLowerCase(),a=S.accounts.find(x=>x.name.toLowerCase()===u&&x.passwordHash===h);if(a){ss("who",a.name);go("#/dashboard")}else $("m").textContent="Wrong username or password."};
 }
 function gate(next){
-  shell(`<h1>Connect to GitHub</h1><form class="box" id="gf"><p>Enter your GitHub token to update results. It stays in this browser tab only and is cleared when you log out.</p><label for="k">GitHub token</label><input id="k" type="password" autocomplete="off" required><p><button>Continue</button></p><p id="m" class="mut"></p></form>`,"staff");
-  $("gf").onsubmit=async e=>{e.preventDefault();const t=$("k").value.trim(),m=$("m");m.className="mut";m.textContent="Checking token...";
-    try{const r=await fetch(`https://api.github.com/repos/${O.owner}/${O.name}`,{headers:{Authorization:"Bearer "+t,Accept:"application/vnd.github+json"}});
-      if(r.status===401)throw new Error("That token isn't valid.");
-      if(!r.ok)throw new Error(`Couldn't reach the repo (${r.status}). Check owner and name in config.js and the token's repository access.`);
-      const j=await r.json();if(j.permissions&&j.permissions.push===false)throw new Error("This token can't write to the repo. It needs Contents read and write.");
+  const cur=/YOUR-/i.test(O.owner+O.name)?"":`${O.owner}/${O.name}`;
+  shell(`<h1>Connect to GitHub</h1><form class="box" id="gf"><p>Enter your repository and a GitHub token to update results. They stay in this browser tab only and are cleared when you log out.</p><label for="rp">Repository (owner/name)</label><input id="rp" value="${esc(cur)}" placeholder="your-org/your-repo" required><label for="k">GitHub token (fine-grained or classic)</label><input id="k" type="password" autocomplete="off" required><p><button>Continue</button></p><p id="m" class="mut"></p></form>`,"staff");
+  $("gf").onsubmit=async e=>{e.preventDefault();const m=$("m"),t=$("k").value.trim().replace(/^Bearer\s+/i,"");
+    const p=$("rp").value.trim().replace(/^https?:\/\/github\.com\//i,"").replace(/\.git$/,"").replace(/^\/|\/$/g,"").split("/");
+    if(p.length<2||!p[0]||!p[1]){m.className="err";m.textContent="Enter the repository as owner/name, for example my-org/my-repo.";return}
+    m.className="mut";m.textContent="Checking...";
+    try{
+      const r=await fetch(`https://api.github.com/repos/${p[0]}/${p[1]}`,{headers:{Authorization:"Bearer "+t,Accept:"application/vnd.github+json"}});
+      const j=await r.json().catch(()=>({}));
+      if(r.status===401)throw new Error("GitHub says the token isn't valid. Copy it again with no spaces.");
+      if(!r.ok)throw new Error(`GitHub said ${r.status}${j.message?": "+j.message:""}. Check the repository name (${p[0]}/${p[1]}) and that the token can access it. For an organisation, the token may need approving or SSO authorisation.`);
+      if(j.permissions&&j.permissions.push===false)throw new Error("This token can read the repo but not write to it. A classic token needs the repo scope; a fine-grained token needs Contents: Read and write.");
+      O={owner:j.owner.login,name:j.name,branch:j.default_branch||"main"};ss("repo",`${O.owner}|${O.name}|${O.branch}`);
       ss(T,t);go(next)}catch(x){m.className="err";m.textContent=x.message}};
 }
 const opts=(f,v,o)=>`<select data-f="${f}">${o.map(x=>`<option value="${esc(x[0])}"${String(x[0])===String(v)?" selected":""}>${esc(x[1])}</option>`).join("")}</select>`;
@@ -117,6 +125,10 @@ function hashPage(){
 function route(){
   const r=location.hash.replace(/^#\/?/,"").split("/")[0];document.title=S.name;
   const R={"":home,president,senate,house,news:newsPage,login,dashboard:dash,hash:hashPage};(R[r]||home)();
+}
+addEventListener("hashchange",route);
+fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
+})();
 }
 addEventListener("hashchange",route);
 fetch("data.json?"+Date.now()).then(r=>r.json()).then(d=>{D=d;route()}).catch(()=>{app.innerHTML="<p style='padding:2rem'>Could not load data.json.</p>"});
